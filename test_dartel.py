@@ -9,6 +9,7 @@ from pypreprocess.io_utils import compute_output_voxel_size
 import joblib as gaelos
 
 root_dir = '/home/vivi/vivi/retraite/ds101_dartel'
+root_dir = '/storage/workspace/yschwart/dartel_vs_newsegment/ds101_dartel'
 
 spm_dir = os.environ['SPM_DIR']
 matlab_cmd = '%s run script' % os.environ['SPM_MCR']
@@ -35,19 +36,17 @@ anat_niimg = nb.load(anat_file)
 
 resampled_func = []
 
-gaelmem = gaelos.Memory('/media/vivi/mobile/cache')
+gaelmem = gaelos.Memory('/storage/workspace/yschwart/cache')
 
 for func_file in func:
     name = os.path.split(func_file)[1]
-    func_niimg = resample_img(nb.load(func_file), target_affine=anat_niimg.get_affine(), target_shape=anat_niimg.shape)
-    func_niimg.to_filename('/media/vivi/mobile/dartel_cache/resampled_%s' % name)
-    resampled_func.append('/media/vivi/mobile/dartel_cache/resampled_%s' % name)
+    func_niimg = gaelmem.cache(resample_img)(nb.load(func_file), target_affine=anat_niimg.get_affine(), target_shape=anat_niimg.shape)
+    func_niimg.to_filename('/storage/workspace/yschwart/dartel_cache/resampled_%s' % name)
+    resampled_func.append('/storage/workspace/yschwart/dartel_cache/resampled_%s' % name)
 
 print resampled_func
 
-stop
-
-cache_dir = "/tmp/dartel"
+cache_dir = "/storage/workspace/yschwart/dartel_cache"
 if not os.path.exists(cache_dir): os.makedirs(cache_dir)
 mem = Memory(cache_dir)
 createwarped_result = mem.cache(spm.CreateWarped)(
@@ -57,6 +56,13 @@ createwarped_result = mem.cache(spm.CreateWarped)(
     )
 
 warped_func = createwarped_result.outputs.warped_files
+
+ref_func = nb.load(func[0])
+for func_file in warped_func:
+    name = os.path.split(func_file)[1].split('resample')[1]
+    func_niimg = gaelmem.cache(resample_img)(nb.load(func_file), target_affine=ref_func.get_affine(), target_shape=ref_func.shape[:-1])
+    func_niimg.to_filename('/storage/workspace/yschwart/dartel_cache/downsampled_%s' % name)
+
 
 """
 tricky_kwargs = {}
