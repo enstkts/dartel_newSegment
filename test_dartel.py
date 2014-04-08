@@ -21,7 +21,7 @@ createwarped = spm.CreateWarped().run
 
 func = ['%s/sub011/cache_dir/nipype_mem/nipype-interfaces-spm-preprocess-Coregister/8654d3bc4ab17cc25ebe615130929ef9/rbold.nii' % root_dir,
 	'%s/sub011/cache_dir/nipype_mem/nipype-interfaces-spm-preprocess-Coregister/8654d3bc4ab17cc25ebe615130929ef9/rbold_c0000.nii' % root_dir]
-
+ref_func = '/storage/workspace/yschwart/dartel_vs_newsegment/ds101_dartel/sub011/task001_run001/bold.nii.gz'
 flow_fields = '%s/sub021/cache_dir/nipype_mem/nipype-interfaces-spm-preprocess-DARTEL/01577a0cd4650a2bae6a429689995f03/u_rc1highres001_brain_c0009_Template.nii' % root_dir
 
 template_file = '%s/sub021/cache_dir/nipype_mem/nipype-interfaces-spm-preprocess-DARTEL/01577a0cd4650a2bae6a429689995f03/Template_6.nii' % root_dir
@@ -49,17 +49,19 @@ print resampled_func
 cache_dir = "/storage/workspace/yschwart/dartel_cache"
 if not os.path.exists(cache_dir): os.makedirs(cache_dir)
 mem = Memory(cache_dir)
-createwarped_result = mem.cache(spm.CreateWarped)(
-    image_files=resampled_func,
+#mem.cache(spm.CreateWarped)
+
+createwarped_result = createwarped(
+    image_files=resampled_func[:1],
     flowfield_files=[flow_fields],
     ignore_exception=False
     )
 
 warped_func = createwarped_result.outputs.warped_files
 
-ref_func = nb.load(func[0])
+ref_func = nb.load(ref_func)
 for func_file in warped_func:
-    name = os.path.split(func_file)[1].split('resample')[1]
+    name = os.path.split(func_file)[1].split('resampled')[1]
     func_niimg = gaelmem.cache(resample_img)(nb.load(func_file), target_affine=ref_func.get_affine(), target_shape=ref_func.shape[:-1])
     func_niimg.to_filename('/storage/workspace/yschwart/dartel_cache/downsampled_%s' % name)
 
